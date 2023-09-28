@@ -3,10 +3,10 @@ import { Filter, ObjectId } from "mongodb";
 import { Router, getExpressRouter } from "./framework/router";
 
 import { Post, User, WebSession } from "./app";
-import { PostDoc } from "./concepts/post";
+import { PostDoc, PostAuthorNotMatchError } from "./concepts/post";
 import { UserDoc } from "./concepts/user";
 import { WebSessionDoc } from "./concepts/websession";
-import { NotAllowedError } from "concepts/errors";
+import { NotAllowedError } from "./concepts/errors";
 
 class Routes {
   @Router.get("/session")
@@ -65,13 +65,20 @@ class Routes {
   async deletePost(session: WebSessionDoc, _id: ObjectId) {
     // TODO 3: Delete the post with given _id
     // Make sure the user deleting is the author of the post
+    if (session.user === undefined) {
+      return { msg: "Not allowed to delete without logging in!"}
+      //throw new NotAllowedError("Not allowed to delete without logging in!")
+    }
+
     for (const post of await Post.read({"_id:": _id})) {
+      console.log("Hello")
       if (session.user === post.author) {
         const result = await Post.delete(_id)
         return result
       }
       else {
-        throw new NotAllowedError("This user is not allowed to delete this post.")
+        return { msg: "Not allowed to delete as this user!"}
+        //throw new PostAuthorNotMatchError(session.user, _id)
       }
     }
   }
