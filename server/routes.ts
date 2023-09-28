@@ -6,6 +6,7 @@ import { Post, User, WebSession } from "./app";
 import { PostDoc } from "./concepts/post";
 import { UserDoc } from "./concepts/user";
 import { WebSessionDoc } from "./concepts/websession";
+import { NotAllowedError } from "concepts/errors";
 
 class Routes {
   @Router.get("/session")
@@ -64,7 +65,15 @@ class Routes {
   async deletePost(session: WebSessionDoc, _id: ObjectId) {
     // TODO 3: Delete the post with given _id
     // Make sure the user deleting is the author of the post
-    throw new Error("Not implemented!");
+    for (const post of await Post.read({"_id:": _id})) {
+      if (session.user === post.author) {
+        const result = await Post.delete(_id)
+        return result
+      }
+      else {
+        throw new NotAllowedError("This user is not allowed to delete this post.")
+      }
+    }
   }
 }
 
